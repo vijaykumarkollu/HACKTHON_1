@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Intelligence Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.4/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --warning-color: #e74c3c;
+            --positive-color: #2ecc71;
+            --neutral-color: #f39c12;
+            --animation-timing: 0.3s;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .navbar {
+            background-color: var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all var(--animation-timing) ease;
+        }
+
+        .dashboard-card {
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.07);
+            transition: all var(--animation-timing) ease;
+            background: white;
+            height: 100%;
+            animation: fadeIn 0.5s ease-out;
+            overflow: hidden;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .score-badge {
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            transition: transform 0.2s ease;
+        }
+
+        .score-badge:hover {
+            transform: scale(1.05);
+        }
+
+        .score-good {
+            background: linear-gradient(135deg, var(--positive-color), #27ae60);
+            color: white;
+        }
+
+        .score-medium {
+            background: linear-gradient(135deg, var(--neutral-color), #e67e22);
+            color: white;
+        }
+
+        .score-poor {
+            background: linear-gradient(135deg, var(--warning-color), #c0392b);
+            color: white;
+        }
+
+        .feature-importance-bar {
+            height: 24px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            transition: width 1s ease-in-out;
+        }
+
+        .event-timeline {
+            border-left: 3px solid var(--accent-color);
+            padding-left: 20px;
+            margin-left: 10px;
+        }
+
+        .event-item {
+            position: relative;
+            margin-bottom: 20px;
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        .event-item:nth-child(even) {
+            animation: slideInLeft 0.5s ease-out;
+        }
+
+        .event-item:before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            left: -28px;
+            top: 5px;
+            transition: transform 0.3s ease;
+        }
+
+        .event-item:hover:before {
+            transform: scale(1.5);
+        }
+
+        .negative-event {
+            border-color: var(--warning-color);
+        }
+
+        .negative-event:before {
+            background: var(--warning-color);
+        }
+
+        .positive-event {
+            border-color: var(--positive-color);
+        }
+
+        .positive-event:before {
+            background: var(--positive-color);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .trend-indicator {
+            font-weight: bold;
+            margin-left: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .trend-indicator:hover {
+            transform: scale(1.2);
+        }
+
+        .trend-up {
+            color: var(--positive-color);
+        }
+
+        .trend-down {
+            color: var(--warning-color);
+        }
+
+        .trend-neutral {
+            color: var(--neutral-color);
+        }
+
+        .alert-item {
+            border-left: 4px solid var(--warning-color);
+            padding-left: 10px;
+            margin-bottom: 10px;
+        }
+
+        .alert-high {
+            border-left-color: var(--warning-color);
+        }
+
+        .alert-medium {
+            border-left-color: var(--neutral-color);
+        }
+
+        .alert-low {
+            border-left-color: var(--accent-color);
+        }
+
+        .modal-content {
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 992px) {
+            .sidebar-col {
+                position: fixed;
+                top: 0;
+                left: -300px;
+                width: 280px;
+                height: 100vh;
+                z-index: 1000;
+                background: white;
+                padding-top: 70px;
+                overflow-y: auto;
+                transition: left 0.3s ease;
+                box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+            }
+            
+            .sidebar-col.active {
+                left: 0;
+            }
+            
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+                display: none;
+            }
+            
+            .sidebar-overlay.active {
+                display: block;
+            }
+            
+            .main-content {
+                padding-left: 0 !important;
+            }
+            
+            .filter-toggle-btn {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 100;
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                background: var(--primary-color);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+                animation: pulse 2s infinite;
+            }
+            
+            .navbar-brand {
+                font-size: 1rem;
+            }
+            
+            .dashboard-card {
+                margin-bottom: 15px;
+            }
+            
+            .table-responsive {
+                font-size: 0.8rem;
+            }
+            
+            .search-form {
+                margin-top: 10px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-card {
+                margin-bottom: 10px;
+            }
+            
+            .dashboard-card h2 {
+                font-size: 1.5rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.7rem;
+            }
+            
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .progress-bar {
+            transition: width 1s ease-in-out;
+        }
+
+        /* Chart container responsiveness */
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        /* Custom scrollbar for sidebar */
+        .sidebar-col::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-col::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .sidebar-col::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+
+        .sidebar-col::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-graph-up"></i> Credit Intelligence Platform
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Issuers</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Asset Classes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showAlerts()">Alerts</a>
+                    </li>
+                </ul>
+                <form class="d-flex">
+                    <input class="form-control me-2" type="search" placeholder="Search issuer..." id="searchInput">
+                    <button class="btn btn-outline-light" type="button" onclick="searchIssuer()">Search</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile filter toggle button -->
+    <button class="btn btn-primary filter-toggle-btn d-lg-none" onclick="toggleSidebar()">
+        <i class="bi bi-funnel"></i>
+    </button>
+
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Sidebar Filters -->
+            <div class="col-lg-2 sidebar-col">
+                <div class="dashboard-card p-3 mb-4">
+                    <h5>Filters</h5>
+                    <div class="mb-3">
+                        <label class="form-label">Sector</label>
+                        <select class="form-select" id="sectorFilter">
+                            <option value="all">All Sectors</option>
+                            <option value="technology">Technology</option>
+                            <option value="energy">Energy</option>
+                            <option value="financial">Financial</option>
+                            <option value="healthcare">Healthcare</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Credit Score Range</label>
+                        <input type="range" class="form-range" min="300" max="850" id="scoreRange">
+                        <div class="form-text" id="rangeValue">300 - 850</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Region</label>
+                        <select class="form-select" id="regionFilter">
+                            <option value="all">All Regions</option>
+                            <option value="northAmerica">North America</option>
+                            <option value="europe">Europe</option>
+                            <option value="asia">Asia</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary w-100" onclick="applyFilters()">Apply Filters</button>
+                </div>
+
+                <div class="dashboard-card p-3">
+                    <h5>Data Sources</h5>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="secData" checked onchange="toggleDataSource('sec')">
+                        <label class="form-check-label" for="secData">SEC EDGAR</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="yahooData" checked onchange="toggleDataSource('yahoo')">
+                        <label class="form-check-label" for="yahooData">Yahoo Finance</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="newsData" checked onchange="toggleDataSource('news')">
+                        <label class="form-check-label" for="newsData">News Headlines</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="transcriptData" onchange="toggleDataSource('transcript')">
+                        <label class="form-check-label" for="transcriptData">Earnings Transcripts</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div class="col-lg-10 main-content">
+                <div class="row">
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="dashboard-card p-3 text-center">
+                            <h6>Total Issuers Monitored</h6>
+                            <h2 id="totalIssuers">142</h2>
+                            <div class="text-success">
+                                <small>+5 this week</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="dashboard-card p-3 text-center">
+                            <h6>Average Credit Score</h6>
+                            <h2 id="avgScore">724</h2>
+                            <div class="text-danger">
+                                <small>-2 points this week</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="dashboard-card p-3 text-center">
+                            <h6>Recent Alerts</h6>
+                            <h2 id="recentAlerts">8</h2>
+                            <div class="text-warning">
+                                <small>3 high priority</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-4">
+                        <div class="dashboard-card p-3 text-center">
+                            <h6>Data Freshness</h6>
+                            <h2 id="dataFreshness">98%</h2>
+                            <div class="text-info">
+                                <small>Last updated: <span id="lastUpdateTime">2 min ago</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Issuer Summary -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="dashboard-card p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>Issuer Summary</h5>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="issuerDropdown" data-bs-toggle="dropdown">
+                                        Select Issuer
+                                    </button>
+                                    <ul class="dropdown-menu" id="issuerList">
+                                        <li><a class="dropdown-item" href="#" onclick="selectIssuer('Apple Inc.', 'AAPL')">Apple Inc. (AAPL)</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="selectIssuer('Microsoft Corp.', 'MSFT')">Microsoft Corp. (MSFT)</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="selectIssuer('Exxon Mobil', 'XOM')">Exxon Mobil (XOM)</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="selectIssuer('JPMorgan Chase', 'JPM')">JPMorgan Chase (JPM)</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div id="issuerSummary">
+                                <div class="text-center p-4">
+                                    <p>Select an issuer to view details</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Score Trend Chart -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="dashboard-card p-3">
+                            <h5>Credit Score Trend</h5>
+                            <div class="chart-container">
+                                <canvas id="scoreTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Feature Importance -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="dashboard-card p-3">
+                            <h5>Feature Impact on Credit Score</h5>
+                            <div id="featureImportance">
+                                <div class="text-center p-4">
+                                    <p>Select an issuer to view feature importance</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Events -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="dashboard-card p-3">
+                            <h5>Recent Events & Impact</h5>
+                            <div id="recentEvents">
+                                <div class="text-center p-4">
+                                    <p>Select an issuer to view recent events</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <div class="dashboard-card p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>Issuer Comparison</h5>
+                                <button class="btn btn-sm btn-outline-primary" onclick="addToComparison()">Add to Comparison</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Issuer</th>
+                                            <th>Sector</th>
+                                            <th>Credit Score</th>
+                                            <th>Trend (7d)</th>
+                                            <th>Liquidity</th>
+                                            <th>Profitability</th>
+                                            <th>Leverage</th>
+                                            <th>Market Sentiment</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="comparisonTable">
+                                        <tr>
+                                            <td>Apple Inc. (AAPL)</td>
+                                            <td>Technology</td>
+                                            <td><span class="score-badge score-good">825</span></td>
+                                            <td><span class="trend-indicator trend-up">↑ 2.1%</span></td>
+                                            <td>Strong</td>
+                                            <td>Excellent</td>
+                                            <td>Low</td>
+                                            <td>Positive</td>
+                                            <td><button class="btn btn-sm btn-info" onclick="selectIssuer('Apple Inc.', 'AAPL')">View</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Microsoft Corp. (MSFT)</td>
+                                            <td>Technology</td>
+                                            <td><span class="score-badge score-good">815</span></td>
+                                            <td><span class="trend-indicator trend-up">↑ 1.7%</span></td>
+                                            <td>Strong</td>
+                                            <td>Excellent</td>
+                                            <td>Low</td>
+                                            <td>Positive</td>
+                                            <td><button class="btn btn-sm btn-info" onclick="selectIssuer('Microsoft Corp.', 'MSFT')">View</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Exxon Mobil (XOM)</td>
+                                            <td>Energy</td>
+                                            <td><span class="score-badge score-medium">675</span></td>
+                                            <td><span class="trend-indicator trend-down">↓ 1.2%</span></td>
+                                            <td>Adequate</td>
+                                            <td>Good</td>
+                                            <td>Medium</td>
+                                            <td>Neutral</td>
+                                            <td><button class="btn btn-sm btn-info" onclick="selectIssuer('Exxon Mobil', 'XOM')">View</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td>JPMorgan Chase (JPM)</td>
+                                            <td>Financial</td>
+                                            <td><span class="score-badge score-good">785</span></td>
+                                            <td><span class="trend-indicator trend-neutral">→ 0.3%</span></td>
+                                            <td>Strong</td>
+                                            <td>Excellent</td>
+                                            <td>Regulated</td>
+                                            <td>Positive</td>
+                                            <td><button class="btn btn-sm btn-info" onclick="selectIssuer('JPMorgan Chase', 'JPM')">View</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Alerts Modal -->
+    <div class="modal fade" id="alertsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Recent Alerts</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertsContent">
+                        <!-- Alerts will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Report Modal -->
+    <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reportModalTitle">Detailed Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="reportContent">
+                        <!-- Report content will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Export PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Set Alert Modal -->
+    <div class="modal fade" id="setAlertModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Set New Alert</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="alertForm">
+                        <div class="mb-3">
+                            <label for="alertIssuer" class="form-label">Issuer</label>
+                            <select class="form-select" id="alertIssuer">
+                                <option value="">Select Issuer</option>
+                                <option value="AAPL">Apple Inc. (AAPL)</option>
+                                <option value="MSFT">Microsoft Corp. (MSFT)</option>
+                                <option value="XOM">Exxon Mobil (XOM)</option>
+                                <option value="JPM">JPMorgan Chase (JPM)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="alertMetric" class="form-label">Metric to Monitor</label>
+                            <select class="form-select" id="alertMetric">
+                                <option value="">Select Metric</option>
+                                <option value="credit_score">Credit Score</option>
+                                <option value="liquidity">Liquidity</option>
+                                <option value="profitability">Profitability</option>
+                                <option value="leverage">Leverage</option>
+                                <option value="sentiment">Market Sentiment</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="alertCondition" class="form-label">Condition</label>
+                            <select class="form-select" id="alertCondition">
+                                <option value="">Select Condition</option>
+                                <option value="above">Above</option>
+                                <option value="below">Below</option>
+                                <option value="change">Significant Change</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="alertValue" class="form-label">Value</label>
+                            <input type="number" class="form-control" id="alertValue" placeholder="Enter threshold value">
+                        </div>
+                        <div class="mb-3">
+                            <label for="alertPriority" class="form-label">Priority</label>
+                            <select class="form-select" id="alertPriority">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveAlert()">Save Alert</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample data for demonstration
+        const issuerData = {
+            'AAPL': {
+                name: 'Apple Inc.',
+                ticker: 'AAPL',
+                sector: 'Technology',
+                creditScore: 825,
+                previousScore: 810,
+                trend: 'up',
+                liquidity: 'Strong',
+                profitability: 'Excellent',
+                leverage: 'Low',
+                marketSentiment: 'Positive',
+                features: [
+                    { name: 'Cash Reserves', value: 80, impact: 25 },
+                    { name: 'Revenue Growth', value: 7.5, impact: 20 },
+                    { name: 'Profit Margin', value: 25.3, impact: 18 },
+                    { name: 'Debt-to-Equity', value: 1.2, impact: 15 },
+                    { name: 'Market Position', value: 95, impact: 12 },
+                    { name: 'Innovation Index', value: 88, impact: 10 }
+                ],
+                events: [
+                    { 
+                        date: '2023-10-15', 
+                        type: 'positive', 
+                        title: 'Record Q3 Earnings', 
+                        description: 'Apple reported record quarterly revenue of $89.5 billion, exceeding analyst expectations.',
+                        impact: 12
+                    },
+                    { 
+                        date: '2023-10-10', 
+                        type: 'positive', 
+                        title: 'New Product Launch', 
+                        description: 'Apple unveiled new iPhone model with significant technological advancements.',
+                        impact: 8
+                    },
+                    { 
+                        date: '2023-10-05', 
+                        type: 'negative', 
+                        title: 'Supply Chain Concerns', 
+                        description: 'Reports of potential disruptions in key supply chain partners.',
+                        impact: -5
+                    },
+                    { 
+                        date: '2023-09-28', 
+                        type: 'positive', 
+                        title: 'Analyst Upgrade', 
+                        description: 'Goldman Sachs upgraded Apple stock to Buy with increased price target.',
+                        impact: 6
+                    }
+                ],
+                scoreHistory: [
+                    { date: '2023-07-01', score: 810 },
+                    { date: '2023-07-15', score: 812 },
+                    { date: '2023-08-01', score: 808 },
+                    { date: '2023-08-15', score: 815 },
+                    { date: '2023-09-01', score: 818 },
+                    { date: '2023-09-15', score: 820 },
+                    { date: '2023-10-01', score: 822 },
+                    { date: '2023-10-15', score: 825 }
+                ]
+            },
+            'MSFT': {
+                name: 'Microsoft Corp.',
+                ticker: 'MSFT',
+                sector: 'Technology',
+                creditScore: 815,
+                previousScore: 805,
+                trend: 'up',
+                liquidity: 'Strong',
+                profitability: 'Excellent',
+                leverage: 'Low',
+                marketSentiment: 'Positive',
+                features: [
+                    { name: 'Cloud Revenue', value: 75, impact: 28 },
+                    { name: 'Enterprise Contracts', value: 85, impact: 22 },
+                    { name: 'Profit Margin', value: 30.1, impact: 17 },
+                    { name: 'Debt-to-Equity', value: 1.5, impact: 13 },
+                    { name: 'Market Diversity', value: 90, impact: 11 },
+                    { name: 'R&D Investment', value: 82, impact: 9 }
+                ],
+                events: [
+                    { 
+                        date: '2023-10-12', 
+                        type: 'positive', 
+                        title: 'Azure Growth Exceeds Expectations', 
+                        description: 'Microsoft Cloud revenue grew 22% year-over-year, surpassing estimates.',
+                        impact: 10
+                    },
+                    { 
+                        date: '2023-10-03', 
+                        type: 'positive', 
+                        title: 'AI Integration Announcement', 
+                        description: 'Microsoft announced new AI capabilities across product suite.',
+                        impact: 9
+                    },
+                    { 
+                        date: '2023-09-25', 
+                        type: 'neutral', 
+                        title: 'Regulatory Review', 
+                        description: 'EU regulators examining cloud practices, no immediate action expected.',
+                        impact: -2
+                    }
+                ],
+                scoreHistory: [
+                    { date: '2023-07-01', score: 800 },
+                    { date: '2023-07-15', score: 805 },
+                    { date: '2023-08-01', score: 802 },
+                    { date: '2023-08-15', score: 808 },
+                    { date: '2023-09-01', score: 810 },
+                    { date: '2023-09-15', score: 812 },
+                    { date: '2023-10-01', score: 813 },
+                    { date: '2023-10-15', score: 815 }
+                ]
+            },
+            'XOM': {
+                name: 'Exxon Mobil',
+                ticker: 'XOM',
+                sector: 'Energy',
+                creditScore: 675,
+                previousScore: 685,
+                trend: 'down',
+                liquidity: 'Adequate',
+                profitability: 'Good',
+                leverage: 'Medium',
+                marketSentiment: 'Neutral',
+                features: [
+                    { name: 'Oil Prices', value: -12, impact: 30 },
+                    { name: 'Reserve Replacement', value: 95, impact: 20 },
+                    { name: 'Refining Margins', value: 8.5, impact: 18 },
+                    { name: 'Debt Levels', value: 45, impact: 15 },
+                    { name: 'CAPEX Efficiency', value: 75, impact: 10 },
+                    { name: 'Renewable Investment', value: 25, impact: 7 }
+                ],
+                events: [
+                    { 
+                        date: '2023-10-14', 
+                        type: 'negative', 
+                        title: 'Oil Price Volatility', 
+                        description: 'Global oil prices dropped 8% amid demand concerns.',
+                        impact: -15
+                    },
+                    { 
+                        date: '2023-10-05', 
+                        type: 'positive', 
+                        title: 'Guyana Project Success', 
+                        description: 'New offshore field production exceeding expectations.',
+                        impact: 8
+                    },
+                    { 
+                        date: '2023-09-20', 
+                        type: 'negative', 
+                        title: 'Climate Regulation Proposal', 
+                        description: 'New emissions regulations could increase compliance costs.',
+                        impact: -10
+                    }
+                ],
+                scoreHistory: [
+                    { date: '2023-07-01', score: 690 },
+                    { date: '2023-07-15', score: 685 },
+                    { date: '2023-08-01', score: 680 },
+                    { date: '2023-08-15', score: 682 },
+                    { date: '2023-09-01', score: 678 },
+                    { date: '2023-09-15', score: 675 },
+                    { date: '2023-10-01', score: 673 },
+                    { date: '2023-10-15', score: 675 }
+                ]
+            },
+            'JPM': {
+                name: 'JPMorgan Chase',
+                ticker: 'JPM',
+                sector: 'Financial',
+                creditScore: 785,
+                previousScore: 782,
+                trend: 'neutral',
+                liquidity: 'Strong',
+                profitability: 'Excellent',
+                leverage: 'Regulated',
+                marketSentiment: 'Positive',
+                features: [
+                    { name: 'Tier 1 Capital', value: 13.2, impact: 25 },
+                    { name: 'Net Interest Margin', value: 2.6, impact: 22 },
+                    { name: 'Loan Growth', value: 5.8, impact: 18 },
+                    { name: 'Credit Loss Provisions', value: 1.2, impact: 15 },
+                    { name: 'Fee Income', value: 45, impact: 12 },
+                    { name: 'Digital Banking', value: 80, impact: 8 }
+                ],
+                events: [
+                    { 
+                        date: '2023-10-13', 
+                        type: 'positive', 
+                        title: 'Strong Quarterly Results', 
+                        description: 'JPMorgan beat earnings estimates with strong investment banking performance.',
+                        impact: 10
+                    },
+                    { 
+                        date: '2023-10-02', 
+                        type: 'neutral', 
+                        title: 'Fed Stress Test Results', 
+                        description: 'JPMorgan passed Fed stress test but required to maintain capital buffers.',
+                        impact: -3
+                    },
+                    { 
+                        date: '2023-09-18', 
+                        type: 'positive', 
+                        title: 'Acquisition Announcement', 
+                        description: 'JPMorgan acquired fintech company to bolster digital offerings.',
+                        impact: 6
+                    }
+                ],
+                scoreHistory: [
+                    { date: '2023-07-01', score: 780 },
+                    { date: '2023-07-15', score: 782 },
+                    { date: '2023-08-01', score: 778 },
+                    { date: '2023-08-15', score: 783 },
+                    { date: '2023-09-01', score: 785 },
+                    { date: '2023-09-15', score: 783 },
+                    { date: '2023-10-01', score: 784 },
+                    { date: '2023-10-15', score: 785 }
+                ]
+            }
+        };
+
+        // Sample alerts data
+        const alertsData = [
+            {
+                id: 1,
+                issuer: 'XOM',
+                title: 'Credit Score Decline',
+                description: 'Exxon Mobil credit score dropped by 10 points due to oil price volatility',
+                priority: 'high',
+                date: '2023-10-16',
+                read: false
+            },
+            {
+                id: 2,
+                issuer: 'JPM',
+                title: 'Regulatory Changes',
+                description: 'New banking regulations may impact JPMorgan Chase profitability',
+                priority: 'medium',
+                date: '2023-10-15',
+                read: false
+            },
+            {
+                id: 3,
+                issuer: 'AAPL',
+                title: 'Supply Chain Issues',
+                description: 'Potential disruptions in Apple supply chain detected',
+                priority: 'high',
+                date: '2023-10-14',
+                read: true
+            },
+            {
+                id: 4,
+                issuer: 'MSFT',
+                title: 'Positive Earnings Surprise',
+                description: 'Microsoft earnings exceeded analyst expectations by 12%',
+                priority: 'low',
+                date: '2023-10-13',
+                read: true
+            }
+        ];
+
+        let currentIssuer = null;
+        let scoreChart = null;
+        let activeDataSources = ['sec', 'yahoo', 'news'];
+        let userAlerts = [];
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLastUpdateTime();
+            setInterval(updateLastUpdateTime, 60000); // Update every minute
+            
+            // Set up score range display
+            const scoreRange = document.getElementById('scoreRange');
+            const rangeValue = document.getElementById('rangeValue');
+            scoreRange.addEventListener('input', function() {
+                rangeValue.textContent = `300 - ${this.value}`;
+            });
+            
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Add animation to dashboard cards on load
+            animateCards();
+            
+            // Load any saved alerts
+            loadUserAlerts();
+        });
+
+        function updateLastUpdateTime() {
+            const now = new Date();
+            document.getElementById('lastUpdateTime').textContent = now.toLocaleTimeString();
+        }
+
+        function searchIssuer() {
+            const query = document.getElementById('searchInput').value.trim().toUpperCase();
+            if (query.length < 2) return;
+            
+            // Simple search logic - in a real app, this would query a backend
+            for (const ticker in issuerData) {
+                if (ticker === query || issuerData[ticker].name.toUpperCase().includes(query)) {
+                    selectIssuer(issuerData[ticker].name, ticker);
+                    return;
+                }
+            }
+            
+            // Show not found animation
+            const searchInput = document.getElementById('searchInput');
+            searchInput.classList.add('animate__animated', 'animate__shakeX');
+            setTimeout(() => {
+                searchInput.classList.remove('animate__animated', 'animate__shakeX');
+            }, 1000);
+            
+            alert('Issuer not found. Please try another search term.');
+        }
+
+        function selectIssuer(name, ticker) {
+            showLoading();
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                currentIssuer = ticker;
+                const data = issuerData[ticker];
+                
+                // Update issuer summary
+                const scoreClass = data.creditScore >= 750 ? 'score-good' : 
+                                     data.creditScore >= 650 ? 'score-medium' : 'score-poor';
+                const trendIndicator = data.trend === 'up' ? 
+                    '<span class="trend-indicator trend-up">↑</span>' : 
+                    data.trend === 'down' ? 
+                    '<span class="trend-indicator trend-down">↓</span>' : 
+                    '<span class="trend-indicator trend-neutral">→</span>';
+                
+                const change = data.creditScore - data.previousScore;
+                const changeClass = change >= 0 ? 'text-success' : 'text-danger';
+                const changeSymbol = change >= 0 ? '+' : '';
+                
+                document.getElementById('issuerSummary').innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>${data.name} (${data.ticker})</h4>
+                        <span class="score-badge ${scoreClass}">${data.creditScore}</span>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Sector:</strong> ${data.sector}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Trend:</strong> ${trendIndicator} <span class="${changeClass}">${changeSymbol}${change} from previous</span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2"><strong>Liquidity:</strong> ${data.liquidity}</div>
+                            <div class="mb-2"><strong>Profitability:</strong> ${data.profitability}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2"><strong>Leverage:</strong> ${data.leverage}</div>
+                            <div class="mb-2"><strong>Market Sentiment:</strong> ${data.marketSentiment}</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="showDetailedReport('${ticker}')">View Detailed Report</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="showSetAlertModal('${ticker}')">Set Alert</button>
+                    </div>
+                `;
+                
+                // Update feature importance
+                const featureImportanceHTML = data.features.map(feature => `
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>${feature.name}</span>
+                            <span>${typeof feature.value === 'number' ? feature.value.toFixed(1) : feature.value}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar" role="progressbar" style="width: 0%;" 
+                                aria-valuenow="${feature.impact}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <small class="text-muted">Impact: ${feature.impact}% on score</small>
+                    </div>
+                `).join('');
+                
+                document.getElementById('featureImportance').innerHTML = featureImportanceHTML;
+                
+                // Animate progress bars
+                setTimeout(() => {
+                    const progressBars = document.querySelectorAll('.progress-bar');
+                    progressBars.forEach(bar => {
+                        bar.style.width = bar.getAttribute('aria-valuenow') + '%';
+                    });
+                }, 100);
+                
+                // Update recent events
+                const eventsHTML = data.events.map(event => {
+                    const eventClass = event.type === 'positive' ? 'positive-event' : 
+                                      event.type === 'negative' ? 'negative-event' : '';
+                    return `
+                        <div class="event-item ${eventClass}">
+                            <div class="d-flex justify-content-between">
+                                <strong>${event.title}</strong>
+                                <span class="text-muted">${event.date}</span>
+                            </div>
+                            <p class="mb-1">${event.description}</p>
+                            <small class="${event.impact >= 0 ? 'text-success' : 'text-danger'}">
+                                Score impact: ${event.impact >= 0 ? '+' : ''}${event.impact} points
+                            </small>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('recentEvents').innerHTML = `
+                    <div class="event-timeline">
+                        ${eventsHTML}
+                    </div>
+                `;
+                
+                // Update score trend chart
+                updateScoreChart(data.scoreHistory);
+                
+                hideLoading();
+            }, 800);
+        }
+
+        function updateScoreChart(scoreHistory) {
+            const ctx = document.getElementById('scoreTrendChart').getContext('2d');
+            
+            // Destroy previous chart if it exists
+            if (scoreChart) {
+                scoreChart.destroy();
+            }
+            
+            const dates = scoreHistory.map(item => item.date);
+            const scores = scoreHistory.map(item => item.score);
+            
+            scoreChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Credit Score',
+                        data: scores,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#3498db',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#3498db',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Credit Score History',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 13
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'month',
+                                displayFormats: {
+                                    month: 'MMM yyyy'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            suggestedMin: Math.min(...scores) - 20,
+                            suggestedMax: Math.max(...scores) + 20,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        function applyFilters() {
+            showLoading();
+            // Simulate filter application
+            setTimeout(() => {
+                const sector = document.getElementById('sectorFilter').value;
+                const scoreRange = document.getElementById('scoreRange').value;
+                const region = document.getElementById('regionFilter').value;
+                
+                // Filter the comparison table
+                const tableRows = document.querySelectorAll('#comparisonTable tr');
+                tableRows.forEach(row => {
+                    let showRow = true;
+                    
+                    // Apply sector filter
+                    if (sector !== 'all') {
+                        const sectorCell = row.cells[1].textContent.toLowerCase();
+                        if (!sectorCell.includes(sector)) {
+                            showRow = false;
+                        }
+                    }
+                    
+                    // Apply score filter
+                    const score = parseInt(row.cells[2].querySelector('.score-badge').textContent);
+                    if (score > parseInt(scoreRange)) {
+                        showRow = false;
+                    }
+                    
+                    // Apply region filter (simplified for demo)
+                    if (region !== 'all') {
+                        // This is a simplified implementation for demo purposes
+                        // In a real app, you would have region data for each issuer
+                        if (Math.random() > 0.5) { // Randomly show/hide for demo
+                            showRow = false;
+                        }
+                    }
+                    
+                    row.style.display = showRow ? '' : 'none';
+                });
+                
+                // Add animation to filtered content
+                const cards = document.querySelectorAll('.dashboard-card');
+                cards.forEach(card => {
+                    card.classList.add('animate__animated', 'animate__fadeIn');
+                });
+                
+                hideLoading();
+            }, 500);
+        }
+
+        function addToComparison() {
+            // Show notification animation
+            const button = event.target;
+            button.classList.add('animate__animated', 'animate__pulse');
+            setTimeout(() => {
+                button.classList.remove('animate__animated', 'animate__pulse');
+            }, 1000);
+            
+            // In a real application, this would open a modal to select issuers to add
+            alert('Select issuers to add to comparison. This feature would open a selection modal in a full implementation.');
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                overlay.style.opacity = '1';
+            }, 300);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar-col');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        function animateCards() {
+            const cards = document.querySelectorAll('.dashboard-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+        }
+
+        function toggleDataSource(source) {
+            const checkbox = document.getElementById(`${source}Data`);
+            if (checkbox.checked) {
+                if (!activeDataSources.includes(source)) {
+                    activeDataSources.push(source);
+                }
+            } else {
+                const index = activeDataSources.indexOf(source);
+                if (index > -1) {
+                    activeDataSources.splice(index, 1);
+                }
+            }
+            
+            // Show feedback about active data sources
+            const feedback = `Data sources updated: ${activeDataSources.join(', ')}`;
+            console.log(feedback); // In a real app, you might show a toast notification
+            
+            // For demo purposes, let's update the data freshness indicator
+            document.getElementById('dataFreshness').textContent = 
+                activeDataSources.length >= 3 ? '98%' : (activeDataSources.length >= 2 ? '92%' : '85%');
+        }
+
+        function showAlerts() {
+            const alertsModal = new bootstrap.Modal(document.getElementById('alertsModal'));
+            const alertsContent = document.getElementById('alertsContent');
+            
+            // Combine system alerts with user alerts
+            const allAlerts = [...alertsData, ...userAlerts];
+            
+            if (allAlerts.length === 0) {
+                alertsContent.innerHTML = '<div class="text-center p-4"><p>No alerts at this time</p></div>';
+            } else {
+                // Sort alerts by date (newest first) and priority
+                allAlerts.sort((a, b) => {
+                    if (a.priority === 'high' && b.priority !== 'high') return -1;
+                    if (a.priority !== 'high' && b.priority === 'high') return 1;
+                    return new Date(b.date) - new Date(a.date);
+                });
+                
+                const alertsHTML = allAlerts.map(alert => `
+                    <div class="alert-item alert-${alert.priority} mb-3">
+                        <div class="d-flex justify-content-between">
+                            <h6>${alert.title}</h6>
+                            <span class="badge bg-${alert.priority === 'high' ? 'danger' : alert.priority === 'medium' ? 'warning' : 'info'}">${alert.priority}</span>
+                        </div>
+                        <p class="mb-1">${alert.description}</p>
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">${issuerData[alert.issuer] ? issuerData[alert.issuer].name : alert.issuer}</small>
+                            <small class="text-muted">${alert.date}</small>
+                        </div>
+                    </div>
+                `).join('');
+                
+                alertsContent.innerHTML = alertsHTML;
+            }
+            
+            alertsModal.show();
+        }
+
+        function showDetailedReport(ticker) {
+            const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+            const reportContent = document.getElementById('reportContent');
+            const reportTitle = document.getElementById('reportModalTitle');
+            const data = issuerData[ticker];
+            
+            reportTitle.textContent = `Detailed Report - ${data.name} (${data.ticker})`;
+            
+            // Generate comprehensive report
+            const reportHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="dashboard-card p-3 mb-3">
+                            <h6>Financial Overview</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Credit Score</td>
+                                    <td><span class="score-badge ${data.creditScore >= 750 ? 'score-good' : data.creditScore >= 650 ? 'score-medium' : 'score-poor'}">${data.creditScore}</span></td>
+                                </tr>
+                                <tr>
+                                    <td>Sector</td>
+                                    <td>${data.sector}</td>
+                                </tr>
+                                <tr>
+                                    <td>Liquidity</td>
+                                    <td>${data.liquidity}</td>
+                                </tr>
+                                <tr>
+                                    <td>Profitability</td>
+                                    <td>${data.profitability}</td>
+                                </tr>
+                                <tr>
+                                    <td>Leverage</td>
+                                    <td>${data.leverage}</td>
+                                </tr>
+                                <tr>
+                                    <td>Market Sentiment</td>
+                                    <td>${data.marketSentiment}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="dashboard-card p-3 mb-3">
+                            <h6>Score Factors</h6>
+                            <div class="chart-container">
+                                <canvas id="factorChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="dashboard-card p-3">
+                            <h6>Historical Performance</h6>
+                            <div class="chart-container" style="height: 300px;">
+                                <canvas id="historicalChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="dashboard-card p-3">
+                            <h6>Peer Comparison</h6>
+                            <p>This section would show a detailed comparison with industry peers in a full implementation.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            reportContent.innerHTML = reportHTML;
+            
+            // Render charts after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                renderReportCharts(ticker);
+            }, 100);
+            
+            reportModal.show();
+        }
+
+        function renderReportCharts(ticker) {
+            const data = issuerData[ticker];
+            
+            // Factor impact chart
+            const factorCtx = document.getElementById('factorChart').getContext('2d');
+            new Chart(factorCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.features.map(f => f.name),
+                    datasets: [{
+                        data: data.features.map(f => f.impact),
+                        backgroundColor: [
+                            '#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Historical performance chart
+            const historicalCtx = document.getElementById('historicalChart').getContext('2d');
+            new Chart(historicalCtx, {
+                type: 'line',
+                data: {
+                    labels: data.scoreHistory.map(item => item.date),
+                    datasets: [{
+                        label: 'Credit Score',
+                        data: data.scoreHistory.map(item => item.score),
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            suggestedMin: Math.min(...data.scoreHistory.map(item => item.score)) - 20,
+                            suggestedMax: Math.max(...data.scoreHistory.map(item => item.score)) + 20
+                        }
+                    }
+                }
+            });
+        }
+
+        function showSetAlertModal(ticker) {
+            const setAlertModal = new bootstrap.Modal(document.getElementById('setAlertModal'));
+            
+            // Pre-select the issuer if provided
+            if (ticker) {
+                document.getElementById('alertIssuer').value = ticker;
+            }
+            
+            setAlertModal.show();
+        }
+
+        function saveAlert() {
+            const issuer = document.getElementById('alertIssuer').value;
+            const metric = document.getElementById('alertMetric').value;
+            const condition = document.getElementById('alertCondition').value;
+            const value = document.getElementById('alertValue').value;
+            const priority = document.getElementById('alertPriority').value;
+            
+            if (!issuer || !metric || !condition || !value) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            // Create new alert
+            const newAlert = {
+                id: Date.now(),
+                issuer: issuer,
+                title: `${issuerData[issuer].name} ${metric} alert`,
+                description: `Alert when ${metric} is ${condition} ${value}`,
+                priority: priority,
+                date: new Date().toISOString().split('T')[0],
+                metric: metric,
+                condition: condition,
+                value: value
+            };
+            
+            // Add to user alerts
+            userAlerts.push(newAlert);
+            
+            // Save to localStorage
+            localStorage.setItem('userAlerts', JSON.stringify(userAlerts));
+            
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('setAlertModal')).hide();
+            
+            // Show confirmation
+            alert(`Alert set for ${issuerData[issuer].name}`);
+        }
+
+        function loadUserAlerts() {
+            const savedAlerts = localStorage.getItem('userAlerts');
+            if (savedAlerts) {
+                userAlerts = JSON.parse(savedAlerts);
+            }
+        }
+
+        // Handle window resize for responsiveness
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 992) {
+                const sidebar = document.querySelector('.sidebar-col');
+                const overlay = document.querySelector('.sidebar-overlay');
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            }
+            
+            // Update chart on resize
+            if (currentIssuer && scoreChart) {
+                scoreChart.resize();
+            }
+        });
+    </script>
+</body>
+</html>
